@@ -1,0 +1,16 @@
+{
+	"name": "sla_chaincode",
+	"version": "1.0.0",
+	"description": "SLA chaincode implemented in node.js",
+	"engines": {
+		"node": ">=8.4.0",
+		"npm": ">=5.3.0"
+	},
+	"scripts": {
+		"start": "node slaChaincode.js"
+	},
+	"engine-strict": true,
+	"dependencies": {
+		"fabric-shim": "unstable"
+	}
+}

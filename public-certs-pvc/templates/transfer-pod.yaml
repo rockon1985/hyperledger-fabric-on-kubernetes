@@ -1,0 +1,21 @@
+# This is a dummy pod created for copying
+# crypto config data into persistent volumes
+
+kind: Pod
+apiVersion: v1
+metadata:
+  name: "public-certs-injector-pod"
+  labels:
+    app: "public-certs-injector-pod"
+spec:
+  volumes:
+    - name: "public-certs-volume-claim"
+      persistentVolumeClaim:
+        claimName: "public-certs-volume-claim"
+  containers:
+    - name: "public-certs-injector-pod"
+      image: ubuntu
+      volumeMounts:
+      - mountPath: /etc/hyperledger
+        name: "public-certs-volume-claim"
+      command: ["/bin/bash", "-ecx", "while :; do printf 'waiting for crypto config data to get copied...'; sleep 5 ; done"]

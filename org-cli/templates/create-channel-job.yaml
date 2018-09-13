@@ -1,0 +1,100 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: channel-creation
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: {{ .Values.orgName }}-channel-job
+    spec:
+      restartPolicy: "Never"
+      containers:
+      - command:
+        - /bin/sh
+        - -c
+        - |
+          echo "======= WAITING FOR VOLUMES TO BE UP ===="
+          sleep 5
+          echo "======= CHECKING PEER NODE STATUS ======="
+          peer node status
+          echo "======= CREATING CHANNEL ======="
+          peer channel create -o ${ORDERER_HOST_NAME}:7050 -c ${ORGS_CHANNEL_NAME} -f ./channel-artifacts/${ORGS_CHANNEL_NAME}.tx --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/${ORDERER_NAME}/tlsca.${ORDERER_NAME}-cert.pem
+          rm ${ORGS_CHANNEL_NAME}.block
+          echo "======= FETCHING CHANNEL ======="
+          peer channel fetch config -o ${ORDERER_HOST_NAME}:7050 -c ${ORGS_CHANNEL_NAME} --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/${ORDERER_NAME}/tlsca.${ORDERER_NAME}-cert.pem 
+          file=${ORGS_CHANNEL_NAME}_config.block
+          if [ -f "$file" ]; then
+            echo "======= JOINING CHANNEL ======="
+            peer channel join -b ${file}
+            export CORE_PEER_ADDRESS=peer1-${ORG_DOMAIN}:7051
+            export CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/${ORG_DOMAIN}/peers/peer1-${ORG_DOMAIN}/tls/ca.crt
+            peer channel join -b ${file}
+            peer channel list
+            echo "======= CHANNEL JOINED SUCCESSFULLY ======="
+          fi
+          echo "INFO: Job pod would terminate after 5 mins"
+          sleep 5m
+        env:
+        - name: ORG_DOMAIN
+          value: {{ .Values.orgDomain }}
+        - name: ORGS_CHANNEL_NAME
+          value: {{ .Values.channelName }}
+        - name: ORDERER_HOST_NAME
+          value: {{ .Values.ordDomain }}
+        - name: ORDERER_NAME
+          value: {{ .Values.orderer }}
+        - name: GOPATH
+          value: {{ .Values.env.GOPATH }}
+        - name: CORE_VM_ENDPOINT
+          value: {{ .Values.env.CORE_VM_ENDPOINT }}
+        - name: CORE_LOGGING_LEVEL
+          value: {{ .Values.env.CORE_LOGGING_LEVEL }}
+        - name: CORE_PEER_ID
+          value: "{{ .Values.orgName }}cli"
+        - name: CORE_PEER_ADDRESS
+          value: "{{ .Values.corePeer }}-{{ .Values.orgDomain }}:7051"
+        - name: CORE_PEER_LOCALMSPID
+          value: "{{ .Values.peerOrgName }}MSP"
+        - name: CORE_PEER_NETWORKID
+          value: "{{ .Values.env.CORE_PEER_NETWORKID }}"
+        - name: GODEBUG
+          value: "{{ .Values.env.GODEBUG }}"
+        - name: CORE_PEER_TLS_ENABLED
+          value: "{{ .Values.env.CORE_PEER_TLS_ENABLED }}"
+        - name: CORE_PEER_TLS_CERT_FILE
+          value: "{{ .Values.cryptoBasePath }}/peerOrganizations/{{ .Values.orgDomain }}/peers/{{ .Values.corePeer }}-{{ .Values.orgDomain }}/tls/server.crt"
+        - name: CORE_PEER_TLS_KEY_FILE
+          value: "{{ .Values.cryptoBasePath }}/peerOrganizations/{{ .Values.orgDomain }}/peers/{{ .Values.corePeer }}-{{ .Values.orgDomain }}/tls/server.key"
+        - name: CORE_PEER_TLS_ROOTCERT_FILE
+          value: "{{ .Values.cryptoBasePath }}/peerOrganizations/{{ .Values.orgDomain }}/peers/{{ .Values.corePeer }}-{{ .Values.orgDomain }}/tls/ca.crt"
+        - name: CORE_PEER_MSPCONFIGPATH
+          value: "{{ .Values.cryptoBasePath }}/peerOrganizations/{{ .Values.orgDomain }}/users/Admin@{{ .Values.orgDomain }}/msp"
+        image: hyperledger/fabric-tools:latest
+        name: channel-creation
+        resources: {}
+        stdin: true
+        tty: true
+        volumeMounts:
+        - mountPath: /host/var/run/
+          name: {{ .Values.orgName }}-cli-claim0
+        - mountPath: /opt/gopath/src/github.com/hyperledger/fabric
+          name: {{ .Values.orgName }}-cli-claim1
+        - mountPath: /opt/gopath/src/github.com/chaincode
+          name: {{ .Values.orgName }}-cli
+        workingDir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+      restartPolicy: Always
+      volumes:
+      - name: {{ .Values.orgName }}-cli-claim0
+        hostPath:
+          path: /var/run/
+      - name: {{ .Values.orgName }}-cli-claim1
+        persistentVolumeClaim:
+          claimName: {{ .Values.orgName }}-cli-claim1
+      - name: {{ .Values.orgName }}-cli
+        persistentVolumeClaim:
+          claimName: {{ .Values.orgName }}-cli
+    

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: "{{ .Values.hlfpeer.peername }}-{{ .Values.hlfpeer.orgdomain }}"
+  name: "{{ .Values.hlfpeer.peername }}-{{ .Values.hlfpeer.orgdomain }}"
+spec:
+  ports:
+  - name: "7051"
+    port: 7051
+    targetPort: 7051
+    protocol: TCP
+  - name: "7053"
+    port: 7053
+    targetPort: 7053
+    protocol: TCP
+  selector:
+    service: "{{ .Values.hlfpeer.peername }}-{{ .Values.hlfpeer.orgdomain }}"
+status:
+  loadBalancer: {}

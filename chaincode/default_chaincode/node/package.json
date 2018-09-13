@@ -1,0 +1,16 @@
+{
+	"name": "default_chaincode",
+	"version": "1.0.0",
+	"description": "Default chaincode implemented in node.js",
+	"engines": {
+		"node": ">=8.4.0",
+		"npm": ">=5.3.0"
+	},
+	"scripts": {
+		"start": "node defaultChaincode.js"
+	},
+	"engine-strict": true,
+	"dependencies": {
+		"fabric-shim": "unstable"
+	}
+}

@@ -1,0 +1,63 @@
+OrdererOrgs:
+  - Name: Orderer
+    Domain: example-com
+    # todo[ketan]: Only create pods if Active = true
+    Active: true
+    # Specs:=> to specify specs of orderer pod in the ordererer namespace
+    Specs:
+      - Hostname: orderer
+        CommonName: orderer-example-com
+
+PeerOrgs:
+  - Name: BuyerOne
+    Domain: buyerone-example-com
+    EnableNodeOUs: true
+    # ExtraPods:=>  list of extra application pods we want to run for each org
+    # ============
+    # You can specify information regarding helm chart of the extra app by fields
+    #   Name:=> Name of the extra app
+    #   Chart:=> relative path to the helm chart of the extra app
+    #   Values:=> a list of values that you want to override in helm chart of the app
+    #    *IMP*: all value in Values MUST be passed as a string.
+    ExtraPods: 
+      - Name: buyerone-nodeapp-node
+        Chart: ./nodeapp
+        Values:
+          - name: "nodeapp.replicaCount"
+            value: "1"
+          - name: "nodeapp.name"
+            value: buyerone-nodeapp-node
+          - name: "orgDomain"
+            value: "buyerone-example-com"
+          - name: "orgName"
+            value: "BuyerOne"
+          - name: "nodeType"
+            value: "Buyer"
+    # Specs:=> to specify specs of each peer pod in the org namespace
+    Specs:
+      - Hostname: peer0
+        CommonName: peer0-buyerone-example-com
+      - Hostname: peer1
+        CommonName: peer1-buyerone-example-com
+  - Name: SellerOne
+    Domain: sellerone-example-com
+    EnableNodeOUs: true
+    ExtraPods:
+      - Name: sellerone-nodeapp-node
+        Chart: ./nodeapp
+        Values:
+          - name: "nodeapp.replicaCount"
+            value: "1"
+          - name: "nodeapp.name"
+            value: sellerone-nodeapp-node
+          - name: "orgDomain"
+            value: sellerone-example-com
+          - name: "orgName"
+            value: "SellerOne"
+          - name: "nodeType"
+            value: "Seller"
+    Specs:
+      - Hostname: peer0
+        CommonName: peer0-sellerone-example-com
+      - Hostname: peer1
+        CommonName: peer1-sellerone-example-com

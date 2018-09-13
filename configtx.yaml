@@ -1,0 +1,72 @@
+
+Organizations:
+    - &OrdererOrg
+        Name: OrdererOrg
+        ID: OrdererMSP
+        MSPDir: crypto-config/ordererOrganizations/example-com/msp
+
+    - &BuyerOne
+        Name: BuyerOneMSP
+        ID: BuyerOneMSP
+        MSPDir: crypto-config/peerOrganizations/buyerone-example-com/msp
+        AnchorPeers:
+            - Host: peer0-buyerone-example-com
+              Port: 7051
+
+    - &SellerOne
+        Name: SellerOneMSP
+        ID: SellerOneMSP
+        MSPDir: crypto-config/peerOrganizations/sellerone-example-com/msp
+        AnchorPeers:
+            - Host: peer0-sellerone-example-com
+              Port: 7051
+
+Capabilities:
+    Global: &ChannelCapabilities
+        V1_1: true
+    Orderer: &OrdererCapabilities
+        V1_1: true
+    Application: &ApplicationCapabilities
+        V1_2: true
+
+Application: &ApplicationDefaults
+    Organizations:
+
+Orderer: &OrdererDefaults
+    OrdererType: solo
+    Addresses:
+        - orderer-example-com:7050
+    BatchTimeout: 2s
+    BatchSize:
+        MaxMessageCount: 10
+        AbsoluteMaxBytes: 99 MB
+        PreferredMaxBytes: 512 KB
+    Kafka:
+        Brokers:
+            - 127.0.0.1:9092
+    Organizations:
+
+Profiles:
+    AllOrgsOrdererGenesis:
+        Capabilities:
+            <<: *ChannelCapabilities
+        Orderer:
+            <<: *OrdererDefaults
+            Organizations:
+                - *OrdererOrg
+            Capabilities:
+                <<: *OrdererCapabilities
+        Consortiums:
+            AllOrgsConsortium:
+                Organizations:
+                    - *BuyerOne
+                    - *SellerOne
+    AllOrgsChannel:
+        Consortium: AllOrgsConsortium
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                - *BuyerOne
+                - *SellerOne
+            Capabilities:
+                <<: *ApplicationCapabilities

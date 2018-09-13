@@ -1,0 +1,167 @@
+replicaCount: 1
+
+image:
+  repository: nginx
+  tag: stable
+  pullPolicy: IfNotPresent
+
+nameOverride: "fabric-peer"
+fullnameOverride: "hlf-peer"
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  path: /
+  hosts:
+    - chart-example.local
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+  #  memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+
+# GEO TRADE NODE APP CONFIGS
+geotrade:
+  name: geotrade-node
+  replicaCount: 1
+  image:
+    repository: registry.gitlab.com/geoverse/geotrade-node
+    tag: 0.0.1
+    pullPolicy: IfNotPresent
+  service:
+    name: geotrade-node-service
+    type: ClusterIP
+    port: 3000
+    targetPort: 3000
+    protocol: TCP
+  secret:
+    name: regcred
+
+# HYPERLEDGER FABRIC PEER NODE CONFIGS
+fabricpeer:
+  name: fabricpeer
+  image:
+    repository: hyperledger/fabric-peer
+    tag: x86_64-1.1.0
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    portRequest: 7051
+    portEvent: 7053
+
+  persistence:
+    enabled: true
+    annotations: {}
+    ## If unset or "", use "default" storage class.
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 1Gi
+  caAddress: hlf-ca.local
+  ## Username for registering/enrolling with CA
+  caUsername: peer1
+  ## Password for registering/enrolling with CA  (defaults to random 24 alphanumeric)
+  # caPassword:
+
+  peer:
+    # Type of database ("goleveldb" or "CouchDB"):
+    databaseType: goleveldb
+    # If CouchDB is used, which chart holds it
+    couchdbInstance: cdb-peer1
+    ## MSP ID of the Peer
+    mspID: Org1MSP
+
+  secrets:
+    ## This should contain "channel" transaction derived from a configtx.yaml
+    ## configtxgen -profile ComposerChannel -channelID composerchannel -outputCreateChannelTx composerchannel.tx
+    channel: hlf--channel
+    ## This should contain the Certificate of the Peer Organisation admin
+    ## This is necessary to successfully run the peer
+    adminCert: hlf--peer-admincert
+    ## This should contain the Private Key of the Peer Organisation admin
+    ## This is necessary to successfully join a channel
+    adminKey: hlf--peer-adminkey
+
+  resources: {}
+    ## We usually recommend not to specify default resources and to leave this as a conscious
+    ## choice for the user. This also increases chances charts run on environments with little
+    ## resources, such as Minikube. If you do want to specify resources, uncomment the following
+    ## lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+    ## Suggested antiAffinity, as each Peer should be on a separate Node for resilience
+    # podAntiAffinity:
+    #   requiredDuringSchedulingIgnoredDuringExecution:
+    #     - topologyKey: "kubernetes.io/hostname"
+    #       labelSelector:
+    #         matchLabels:
+    #           app: hlf-peer
+
+hlfpeer:
+  # Pass the organization index and peer index using --set flag from helm
+  # to dynamically create the pod in specific organization's namespace
+  # ***IMPORTANT: org value should always be same to organization namespace
+  orgname: org1
+  orgdomain: org1-geoverse-com
+  peername: peer0
+  peerOrgName: Org1
+  gossipPeer: peer1
+  image:
+    repository: hyperledger/fabric-peer
+    tag: latest
+  env:
+    CORE_LEDGER_HISTORY_ENABLEHISTORY: "true"
+    CORE_LOGGING_LEVEL: "INFO"
+    # CORE_PEER_ADDRESS: "{{ .Values.hlfpeer.peername }}-{{ .Values.hlfpeer.orgdomain }}:7051"
+    # CORE_PEER_GOSSIP_BOOTSTRAP: peer1.sellerone.geoverse.com:7051
+    # CORE_PEER_GOSSIP_EXTERNALENDPOINT: "{{ .Values.hlfpeer.gossipPeer }}-{{ .Values.hlfpeer.orgdomain }}:7051"
+    CORE_PEER_GOSSIP_ORGLEADER: "false"
+    CORE_PEER_GOSSIP_USELEADERELECTION: "true"
+    # CORE_PEER_ID: "{{ .Values.hlfpeer.peername }}-{{ .Values.hlfpeer.orgdomain }}"
+    CORE_PEER_LOCALMSPID: "BuyerOneMSP"
+    CORE_PEER_PROFILE_ENABLED: "true"
+    CORE_PEER_TLS_CERT_FILE: "/etc/hyperledger/fabric/tls/server.crt"
+    CORE_PEER_TLS_ENABLED: "true"
+    CORE_PEER_TLS_KEY_FILE: "/etc/hyperledger/fabric/tls/server.key"
+    CORE_PEER_TLS_ROOTCERT_FILE: "/etc/hyperledger/fabric/tls/ca.crt"
+    CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE: "bridge"
+    CORE_PEER_NETWORKID: geoverse
+    CORE_VM_ENDPOINT: "unix:///host/var/run/docker.sock"
+    CORE_PEER_CHAINCODELISTENADDRESS: "0.0.0.0:7052"
+    CORE_PEER_ADDRESSAUTODETECT: "true"
+    GODEBUG: "netdns=go"
+    CORE_VM_DOCKER_HOSTCONFIG_DNS: "10.51.240.10"

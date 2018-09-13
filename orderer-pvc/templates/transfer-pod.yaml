@@ -1,0 +1,26 @@
+# This is a dummy pod created for copying
+# crypto config data into persistent volumes
+
+kind: Pod
+apiVersion: v1
+metadata:
+  name: "{{ .Values.domain }}-injector-pod"
+  labels:
+    app: "{{ .Values.domain }}-injector-pod"
+spec:
+  volumes:
+    - name: "{{ .Values.domain }}-claim0"
+      persistentVolumeClaim:
+        claimName: "{{ .Values.domain }}-claim0"
+    - name: "{{ .Values.domain }}"
+      persistentVolumeClaim:
+        claimName: "{{ .Values.domain }}"
+  containers:
+    - name: "{{ .Values.domain }}-injector-pod"
+      image: ubuntu
+      volumeMounts:
+      - mountPath: /var/hyperledger/orderer
+        name: "{{ .Values.domain }}-claim0"
+      - mountPath: /var/hyperledger/production/orderer
+        name: "{{ .Values.domain }}"
+      command: ["/bin/bash", "-ecx", "while :; do printf 'waiting for crypto config data to get copied...'; sleep 5 ; done"]

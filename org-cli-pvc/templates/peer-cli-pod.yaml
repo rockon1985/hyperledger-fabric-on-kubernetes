@@ -1,0 +1,31 @@
+# This is a dummy pod created for copying
+# crypto config data into persistent volumes
+
+kind: Pod
+apiVersion: v1
+metadata:
+  name: "{{ .Values.orgname }}-cli-injector-pod"
+  labels:
+    app: "{{ .Values.orgname }}-cli-injector-pod"
+spec:
+  volumes:
+    - name: "{{ .Values.orgname }}-cli-claim0"
+      persistentVolumeClaim:
+        claimName: "{{ .Values.orgname }}-cli-claim0"
+    - name: "{{ .Values.orgname }}-cli-claim1"
+      persistentVolumeClaim:
+        claimName: "{{ .Values.orgname }}-cli-claim1"
+    - name: "{{ .Values.orgname }}-cli"
+      persistentVolumeClaim:
+        claimName: "{{ .Values.orgname }}-cli"
+  containers:
+    - name: "{{ .Values.orgname }}-cli-injector-pod"
+      image: ubuntu
+      volumeMounts:
+      - mountPath: /host/var/run/
+        name: "{{ .Values.orgname }}-cli-claim0"
+      - mountPath: /opt/gopath/src/github.com/hyperledger/fabric/
+        name: "{{ .Values.orgname }}-cli-claim1"
+      - mountPath: /opt/gopath/src/github.com/chaincode
+        name: "{{ .Values.orgname }}-cli"
+      command: ["/bin/bash", "-ecx", "while :; do printf 'waiting for crypto config data to get copied...'; sleep 5 ; done"]
